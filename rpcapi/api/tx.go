@@ -196,8 +196,10 @@ type CalcPoWDifficultyParam struct {
 var multipleDivision = big.NewInt(10)
 
 type CalcPoWDifficultyResult struct {
-	QuotaRequired uint64  `json:"quota"`
+	Quota         uint64  `json:"quota"`
+	QuotaRequired string  `json:"quotaRequired"`
 	Difficulty    string  `json:"difficulty"`
+	TxNumRequired string  `json:"utRequired"`
 	Qc            *string `json:"qc"`
 	IsCongestion  bool    `json:"isCongestion"`
 }
@@ -248,7 +250,7 @@ func (t Tx) CalcPoWDifficulty(param CalcPoWDifficultyParam) (result *CalcPoWDiff
 			return nil, err
 		}
 		if q.Current() >= quotaRequired {
-			return &CalcPoWDifficultyResult{quotaRequired, "", bigIntToString(qc), isCongestion}, nil
+			return &CalcPoWDifficultyResult{quotaRequired, Uint64ToString(quotaRequired), "", Float64ToString(float64(quotaRequired)/float64(quota.QuotaForUtps), 4), bigIntToString(qc), isCongestion}, nil
 		}
 	} else {
 		pledgeAmount = big.NewInt(0)
@@ -267,7 +269,7 @@ func (t Tx) CalcPoWDifficulty(param CalcPoWDifficultyParam) (result *CalcPoWDiff
 		d.Mul(d, multipleDivision)
 		d.Div(d, big.NewInt(int64(param.Multiple)))
 	}
-	return &CalcPoWDifficultyResult{quotaRequired, d.String(), bigIntToString(qc), isCongestion}, nil
+	return &CalcPoWDifficultyResult{quotaRequired, Uint64ToString(quotaRequired), d.String(), Float64ToString(float64(quotaRequired)/float64(quota.QuotaForUtps), 4), bigIntToString(qc), isCongestion}, nil
 }
 
 func (tx Tx) autoSend() {
