@@ -176,6 +176,22 @@ func (f DexFundApi) GetMarketInfo(tradeToken, quoteToken types.TokenTypeId) (*ap
 	}
 }
 
+func (f DexFundApi) GetMarketInfos(begin, end int) ([]*apidex.RpcMarketInfo, error) {
+	db, err := getDb(f.chain, types.AddressDexFund)
+	if err != nil {
+		return nil, err
+	}
+	if marketInfos := dex.GetMarketInfos(db, begin, end); len(marketInfos) == 0 {
+		return nil, nil
+	} else {
+		rpcMarketInfos := make([]*apidex.RpcMarketInfo, len(marketInfos))
+		for i, info := range marketInfos {
+			rpcMarketInfos[i] = apidex.MarketInfoToRpc(info)
+		}
+		return rpcMarketInfos, nil
+	}
+}
+
 func (f DexFundApi) GetCurrentDividendPools() (map[types.TokenTypeId]*apidex.DividendPoolInfo, error) {
 	db, err := getDb(f.chain, types.AddressDexFund)
 	if err != nil {
