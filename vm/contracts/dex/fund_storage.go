@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vitelabs/go-vite/common/helper"
 	"github.com/vitelabs/go-vite/common/types"
+	"github.com/vitelabs/go-vite/interfaces"
 	"github.com/vitelabs/go-vite/ledger"
 	dexproto "github.com/vitelabs/go-vite/vm/contracts/dex/proto"
 	"github.com/vitelabs/go-vite/vm/util"
@@ -108,8 +109,7 @@ var (
 	}
 	initOwner, _          = types.HexToAddress("vite_a8a00b3a2f60f5defb221c68f79b65f3620ee874f951a825db")
 	initViteTokenOwner, _ = types.HexToAddress("vite_050697d3810c30816b005a03511c734c1159f50907662b046f")
-	newOrderMethodId, _ = hex.DecodeString("147927ec")
-
+	newOrderMethodId, _   = hex.DecodeString("147927ec")
 )
 
 const (
@@ -1169,6 +1169,46 @@ func GetMarketInfoByTokens(db vm_db.VmDb, tradeTokenData, quoteTokenData []byte)
 func GetMarketInfo(db vm_db.VmDb, tradeToken, quoteToken types.TokenTypeId) (marketInfo *MarketInfo, ok bool) {
 	marketInfo = &MarketInfo{}
 	ok = deserializeFromDb(db, GetMarketInfoKey(tradeToken, quoteToken), marketInfo)
+	return
+}
+
+func GetMarketInfos(db vm_db.VmDb, begin, end int) (marketInfos []*MarketInfo) {
+	if end <= 0 || begin >= end {
+		return
+	}
+	var (
+		iterator                       interfaces.StorageIterator
+		marketInfoKey, marketInfoValue []byte
+		err                            error
+	)
+	iterator, err = db.NewStorageIterator(marketInfoKeyPrefix)
+	if err != nil {
+		panic(err)
+	}
+	defer iterator.Release()
+
+	marketInfos = make([]*MarketInfo, 0, end-begin)
+	for i := 0; i < end; i++ {
+		if ok := iterator.Next(); ok {
+			marketInfoKey = iterator.Key()
+			marketInfoValue = iterator.Value()
+			if len(marketInfoValue) == 0 || len(marketInfoKey) != len(marketInfoKeyPrefix)+2*types.TokenTypeIdSize {
+				panic(InternalErr)
+			}
+		} else {
+			if iterator.Error() != nil {
+				panic(iterator.Error())
+			}
+			break
+		}
+		if i >= begin {
+			marketInfo := &MarketInfo{}
+			if err = marketInfo.DeSerialize(marketInfoValue); err != nil {
+				panic(err)
+			}
+			marketInfos = append(marketInfos, marketInfo)
+		}
+	}
 	return
 }
 
