@@ -117,6 +117,13 @@ func GetApi(vite *vite.Vite, apiModule string) rpc.API {
 			Service:   api.NewDexTradeApi(vite),
 			Public:    true,
 		}
+	case "dexjob":
+		return rpc.API{
+			Namespace: "dexjob",
+			Version:   "1.0",
+			Service:   api.NewDexJobApi(vite),
+			Public:    false,
+		}
 	case "consensusGroup":
 		return rpc.API{
 			Namespace: "consensusGroup",
